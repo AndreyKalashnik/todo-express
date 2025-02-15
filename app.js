@@ -12,6 +12,8 @@ app.use((req, res, next) => {
     next();
 });
 
+app.use('/static', express.static('public'));
+
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
 });
