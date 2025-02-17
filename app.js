@@ -1,54 +1,68 @@
-const bodyParser = require('body-parser');
-const express = require('express');
+const express = require("express");
+const bodyParser = require("body-parser");
+const mongoose = require("mongoose");
 const app = express();
 const port = 3000;
+require("dotenv").config();
 
 app.use(bodyParser.json());
 
-let todos = [
-    {id: 1, task: 'Learn Node.js'},
-]
+mongoose.connect(process.env.MONGO_URI);
 
-app.get('/todos', (req, res) => {
-    res.json(todos);
+const db = mongoose.connection;
+
+db.on("error", console.error.bind(console, "connection error:"));
+db.once("open", () => {
+  console.log("we are connected to database");
 });
 
-app.post('/todos', (req, res) => {
-    const {task} = req.body;
-    const newTodo = {id: todos.length + 1, task: task};
-
-    todos.push(newTodo);
-    res.status(201).json(newTodo);
+const todoSchema = new mongoose.Schema({
+  task: String,
+  isCompleted: { type: Boolean, default: false },
 });
 
-app.put('/todos/:id', (req, res) => {
-    const {id} = req.params;
-    const {task} = req.body;
-    const updatedTodo = {id, task};
-    
-    todos = todos.map(todo => (todo.id === parseInt(id)) ? updatedTodo : todo);
-    res.json(todos.find(todo => todo.id === parseInt(id)));
+const Todo = mongoose.model("Todo", todoSchema);
+
+app.get("/todos", async (req, res) => {
+  const todos = await Todo.find();
+  res.json(todos);
 });
 
-app.delete('/todos/:id', (req, res) => {
-    const {id} = req.params;
+app.post("/todos", async (req, res) => {
+  const { task } = req.body;
+  const newTodo = new Todo({ task });
 
-    todos = todos.filter(todo => todo.id !== parseInt(id));
-    res.status(204).send();
+  await newTodo.save();
+  res.status(201).json(newTodo);
 });
 
-app.get('/', (req, res) => {
-    res.send('Hello world');
+app.put("/todos/:id", async (req, res) => {
+  const { id } = req.params;
+  const { task, isCompleted } = req.body;
+
+  const updatedTodo = await Todo.findByIdAndUpdate(id, { task, isCompleted }, { new: true });
+  res.json(updatedTodo);
+});
+
+app.delete("/todos/:id", async (req, res) => {
+  const { id } = req.params;
+
+  await Todo.findByIdAndDelete(id);
+  res.status(204).send();
+});
+
+app.get("/", (req, res) => {
+  res.send("Hello world");
 });
 
 app.use((req, res, next) => {
-    console.log(`Request Type: ${req.method}`);
-    console.log(`Request URL: ${req.url}`);
-    next();
+  console.log(`Request Type: ${req.method}`);
+  console.log(`Request URL: ${req.url}`);
+  next();
 });
 
-app.use('/static', express.static('public'));
+app.use("/static", express.static("public"));
 
 app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
+  console.log(`Server is running on http://localhost:${port}`);
 });
