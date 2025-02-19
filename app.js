@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+const Todo = require("./model/Todo");
 const app = express();
 const port = 3000;
 require("dotenv").config();
@@ -15,13 +16,6 @@ db.on("error", console.error.bind(console, "connection error:"));
 db.once("open", () => {
   console.log("we are connected to database");
 });
-
-const todoSchema = new mongoose.Schema({
-  task: String,
-  isCompleted: { type: Boolean, default: false },
-});
-
-const Todo = mongoose.model("Todo", todoSchema);
 
 app.get("/todos", async (req, res) => {
   const todos = await Todo.find();
