@@ -1,49 +1,23 @@
 const express = require("express");
-const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-const Todo = require("./model/Todo");
+const bodyParser = require("body-parser");
+require("dotenv").config();
+const authRoutes = require("./routes/authRoutes");
+const todoRoutes = require("./routes/todoRoutes");
+const authenticateToken = require("./middleware/authenticateToken");
+
 const app = express();
 const port = 3000;
-require("dotenv").config();
 
 app.use(bodyParser.json());
 
-mongoose.connect(process.env.MONGO_URI);
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("we are connected to database"))
+  .catch((error) => console.error(`connection error: ${error}`));
 
-const db = mongoose.connection;
-
-db.on("error", console.error.bind(console, "connection error:"));
-db.once("open", () => {
-  console.log("we are connected to database");
-});
-
-app.get("/todos", async (req, res) => {
-  const todos = await Todo.find();
-  res.json(todos);
-});
-
-app.post("/todos", async (req, res) => {
-  const { task } = req.body;
-  const newTodo = new Todo({ task });
-
-  await newTodo.save();
-  res.status(201).json(newTodo);
-});
-
-app.put("/todos/:id", async (req, res) => {
-  const { id } = req.params;
-  const { task, isCompleted } = req.body;
-
-  const updatedTodo = await Todo.findByIdAndUpdate(id, { task, isCompleted }, { new: true });
-  res.json(updatedTodo);
-});
-
-app.delete("/todos/:id", async (req, res) => {
-  const { id } = req.params;
-
-  await Todo.findByIdAndDelete(id);
-  res.status(204).send();
-});
+app.use("api/auth", authRoutes);
+app.use("api/todos", authenticateToken, todoRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello world");
