@@ -16,8 +16,8 @@ mongoose
   .then(() => console.log("we are connected to database"))
   .catch((error) => console.error(`connection error: ${error}`));
 
-app.use("api/auth", authRoutes);
-app.use("api/todos", authenticateToken, todoRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/todos", authenticateToken, todoRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello world");
